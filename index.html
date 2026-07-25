@@ -21,7 +21,6 @@
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     
-    /* 폰트 적용 */
     body { 
       font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
       color: #333; 
@@ -60,9 +59,9 @@
     .badge-lock { background: #dc3545; }
 
     /* 모달 */
-    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; }
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000; }
     .modal.active { display: flex; }
-    .modal-content { background: white; padding: 2rem; border-radius: 8px; width: 100%; max-width: 400px; }
+    .modal-content { background: white; padding: 2rem; border-radius: 8px; width: 100%; max-width: 480px; max-height: 90vh; overflow-y: auto; }
 
     footer { text-align: center; padding: 2rem; color: #6c757d; font-size: 0.9rem; margin-top: 3rem; }
   </style>
@@ -165,7 +164,7 @@
       <div id="qna-content" style="display: none;">
         <div style="margin-bottom: 1.5rem;">
           <h3>✍️ 비공개 질의 작성</h3>
-          <div class="form-group">
+          <div class="form-group" style="margin-top: 1rem;">
             <input type="text" id="qna-title" placeholder="질문 제목을 입력하세요">
           </div>
           <div class="form-group">
@@ -176,7 +175,7 @@
 
         <hr style="margin: 2rem 0;"><br>
         <h3>📋 나의 질의 내역</h3>
-        <div id="qna-list"></div>
+        <div id="qna-list" style="margin-top: 1rem;"></div>
       </div>
     </section>
   </main>
@@ -184,8 +183,8 @@
   <!-- 로그인 모달 -->
   <div class="modal" id="loginModal">
     <div class="modal-content">
-      <h2>로그인</h2><br>
-      <div class="form-group"><label>이메일</label><input type="email" id="login-email"></div>
+      <h2>🔑 로그인</h2><br>
+      <div class="form-group"><label>이메일</label><input type="email" id="login-email" placeholder="example@email.net"></div>
       <div class="form-group"><label>비밀번호</label><input type="password" id="login-password"></div>
       <button style="width: 100%;" onclick="handleSignIn()">로그인</button><br><br>
       <button class="btn-secondary" style="width: 100%;" onclick="closeModal('loginModal')">닫기</button>
@@ -195,11 +194,25 @@
   <!-- 회원가입 신청 모달 -->
   <div class="modal" id="signupModal">
     <div class="modal-content">
-      <h2>회원가입 신청</h2><br>
-      <div class="form-group"><label>이메일</label><input type="email" id="signup-email"></div>
-      <div class="form-group"><label>비밀번호</label><input type="password" id="signup-password"></div>
-      <div class="form-group"><label>성함</label><input type="text" id="signup-username"></div>
-      <div class="form-group"><label>소속 학교</label><input type="text" id="signup-school" placeholder="예: 서울관악초등학교"></div>
+      <h2>📝 회원가입 신청</h2><br>
+      <div class="form-group"><label>이메일 (아이디)</label><input type="email" id="signup-email" placeholder="example@email.net" required></div>
+      <div class="form-group"><label>비밀번호</label><input type="password" id="signup-password" placeholder="비밀번호 입력" required></div>
+      <div class="form-group"><label>소속 학교명</label><input type="text" id="signup-school" placeholder="예: 서울관악초등학교" required></div>
+      <div class="form-group"><label>담당업무</label><input type="text" id="signup-job" placeholder="예: 4학년 부장, 정보부장 등" required></div>
+      <div class="form-group"><label>성명</label><input type="text" id="signup-username" placeholder="홍길동" required></div>
+      <div class="form-group"><label>연락처</label><input type="tel" id="signup-phone" placeholder="010-0000-0000" required></div>
+      
+      <!-- 개인정보 수집 동의 -->
+      <div class="form-group" style="background: #f8f9fa; padding: 12px; border-radius: 4px; border: 1px solid #dee2e6; font-size: 0.85rem;">
+        <label style="display: flex; align-items: flex-start; gap: 8px; cursor: pointer; font-weight: normal;">
+          <input type="checkbox" id="signup-privacy" style="width: auto; margin-top: 3px;" required>
+          <span><strong>[필수] 개인정보 수집, 제공 및 활용 동의</strong><br>
+          • 수집항목: 학교명, 담당업무, 성명, 연락처, 이메일<br>
+          • 이용목적: 동작관악 초등교육 나눔터 회원 관리 및 비공개 질의 응답<br>
+          <strong>• 이용기한: 2027. 2. 28.까지</strong></span>
+        </label>
+      </div>
+
       <button style="width: 100%;" onclick="handleSignUp()">가입 신청하기</button><br><br>
       <button class="btn-secondary" style="width: 100%;" onclick="closeModal('signupModal')">닫기</button>
     </div>
@@ -210,7 +223,9 @@
   </footer>
 
   <script>
-    // Supabase 정보 설정 (복사해두신 URL과 ANON_KEY 입력)
+    // ----------------------------------------------------
+    // ⚠️ 본인의 Supabase 정보로 꼭 교체하세요!
+    // ----------------------------------------------------
     const SUPABASE_URL = 'https://mfgudlbmnewqkcsrgncr.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1mZ3VkbGJtbmV3cWtjc3JnbmNyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ5NTU4NzksImV4cCI6MjEwMDUzMTg3OX0.WJJu8eWcULSunGqJqZV7gj28qfNR9DabM3Khvr1LJ8g';
     const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -235,32 +250,54 @@
     function openModal(id) { document.getElementById(id).classList.add('active'); }
     function closeModal(id) { document.getElementById(id).classList.remove('active'); }
 
-    // 초기 실행
+    // 페이지 로드 초기 실행
     window.onload = async () => {
       await checkSession();
     };
 
-    // 회원가입
+    // 회원가입 신청 처리
     async function handleSignUp() {
-      const email = document.getElementById('signup-email').value;
+      const email = document.getElementById('signup-email').value.trim();
       const password = document.getElementById('signup-password').value;
-      const username = document.getElementById('signup-username').value;
-      const school_name = document.getElementById('signup-school').value;
+      const school_name = document.getElementById('signup-school').value.trim();
+      const job_title = document.getElementById('signup-job').value.trim();
+      const username = document.getElementById('signup-username').value.trim();
+      const phone = document.getElementById('signup-phone').value.trim();
+      const privacy_agreed = document.getElementById('signup-privacy').checked;
+
+      if (!email || !password || !school_name || !job_title || !username || !phone) {
+        return alert("모든 항목을 입력해 주세요.");
+      }
+
+      if (!privacy_agreed) {
+        return alert("개인정보 수집, 제공 및 활용에 동의하셔야 가입 신청이 가능합니다.");
+      }
 
       const { data, error } = await supabase.auth.signUp({
-        email, password, options: { data: { username, school_name } }
+        email: email,
+        password: password,
+        options: {
+          data: {
+            username: username,
+            school_name: school_name,
+            job_title: job_title,
+            phone: phone,
+            privacy_agreed: privacy_agreed
+          }
+        }
       });
 
-      if (error) alert("신청 실패: " + error.message);
-      else {
-        alert("가입 신청이 완료되었습니다!\n관리자 승인 후 질의 게시판 이용이 가능합니다.");
+      if (error) {
+        alert("신청 실패: " + error.message);
+      } else {
+        alert("가입 신청이 성공적으로 완료되었습니다!\n관리자 승인 후 비공개 질의 게시판 이용이 가능합니다.");
         closeModal('signupModal');
       }
     }
 
     // 로그인
     async function handleSignIn() {
-      const email = document.getElementById('login-email').value;
+      const email = document.getElementById('login-email').value.trim();
       const password = document.getElementById('login-password').value;
 
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
@@ -270,7 +307,7 @@
       location.reload();
     }
 
-    // 세션 및 권한 체크
+    // 세션 및 사용자 정보 체크
     async function checkSession() {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
@@ -278,12 +315,15 @@
         const { data: profile } = await supabase.from('profiles').select('*').eq('id', currentUser.id).single();
         userProfile = profile;
 
-        document.getElementById('auth-buttons').style.display = 'none';
-        document.getElementById('user-info').style.display = 'flex';
-        document.getElementById('user-display-name').innerText = `${profile.school_name} ${profile.username}`;
+        if (profile) {
+          document.getElementById('auth-buttons').style.display = 'none';
+          document.getElementById('user-info').style.display = 'flex';
+          document.getElementById('user-display-name').innerText = `${profile.school_name} ${profile.username}`;
+        }
       }
     }
 
+    // 로그아웃
     async function handleSignOut() {
       await supabase.auth.signOut();
       location.reload();
@@ -308,8 +348,8 @@
 
     // 질문 등록
     async function submitQna() {
-      const title = document.getElementById('qna-title').value;
-      const content = document.getElementById('qna-body').value;
+      const title = document.getElementById('qna-title').value.trim();
+      const content = document.getElementById('qna-body').value.trim();
 
       if(!title || !content) return alert("제목과 내용을 입력해 주세요.");
 
@@ -330,7 +370,7 @@
       }
     }
 
-    // 본인 작성 질문 목록 가져오기
+    // 본인 작성 질문 목록 불러오기
     async function loadMyQna() {
       const { data: posts } = await supabase
         .from('qna_posts')
