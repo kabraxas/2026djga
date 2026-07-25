@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
+  <meta charstyleset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>동작관악 초등교육 나눔터</title>
   
@@ -64,6 +64,99 @@
     .modal-content { background: white; padding: 2rem; border-radius: 8px; width: 100%; max-width: 480px; max-height: 90vh; overflow-y: auto; }
 
     footer { text-align: center; padding: 2rem; color: #6c757d; font-size: 0.9rem; margin-top: 3rem; }
+    <head>
+  <style>
+    /* 기존 스타일 규칙들 ... */
+    
+    /* -------------------------------------------------- */
+    /* ★ 여기에 전달해 드린 CSS 코드를 붙여넣으세요 ★ */
+    /* -------------------------------------------------- */
+    .board-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+      background-color: #ffffff;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .board-table th {
+      background-color: #f8fafc;
+      color: #334155;
+      font-weight: 700;
+      padding: 12px 16px;
+      border-bottom: 2px solid #e2e8f0;
+      text-align: left;
+      font-size: 0.95rem;
+      white-space: nowrap;
+    }
+
+    .board-table td {
+      padding: 14px 16px;
+      border-bottom: 1px solid #f1f5f9;
+      color: #334155;
+      font-size: 0.92rem;
+      vertical-align: middle;
+    }
+
+    .board-table tbody tr:hover {
+      background-color: #f8fafc;
+    }
+
+    .board-table th:nth-child(1) { width: 15%; }
+    .board-table th:nth-child(2) { width: 15%; }
+    .board-table th:nth-child(3) { width: 10%; }
+    .board-table th:nth-child(4) { width: 10%; }
+    .board-table th:nth-child(5) { width: 35%; }
+    .board-table th:nth-child(6) { width: 15%; }
+
+    .unit-title {
+      font-weight: 600;
+      color: #1e293b;
+      margin-bottom: 2px;
+    }
+
+    .topic-text {
+      color: #64748b;
+      font-size: 0.88rem;
+      line-height: 1.4;
+    }
+
+    .btn-download {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      color: #2563eb;
+      font-weight: 600;
+      text-decoration: none;
+      font-size: 0.85rem;
+      padding: 4px 8px;
+      background-color: #eff6ff;
+      border-radius: 4px;
+      border: 1px solid #bfdbfe;
+    }
+
+    .btn-download:hover {
+      background-color: #dbeafe;
+    }
+
+    .btn-delete {
+      background-color: #ef4444;
+      color: white;
+      border: none;
+      padding: 5px 10px;
+      border-radius: 4px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .btn-delete:hover {
+      background-color: #dc2626;
+    }
+  </style>
+</head>
   </style>
 </head>
 <body>
@@ -666,7 +759,7 @@ async function handleMaterialSubmit(event) {
 // 5. 게시글 목록 불러오기
 async function loadMaterialPosts() {
   const tbody = document.getElementById('material-list-body');
-  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">자료를 불러오는 중입니다...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 2rem;">자료를 불러오는 중입니다...</td></tr>';
 
   if (!_supabase) return;
 
@@ -677,13 +770,13 @@ async function loadMaterialPosts() {
     .order('created_at', { ascending: false });
 
   if (error) {
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:red;">불러오기 실패</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:red; padding: 2rem;">불러오기 실패</td></tr>';
     return;
   }
 
   tbody.innerHTML = '';
   if (!posts || posts.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 2rem; color: #777;">등록된 자료가 없습니다.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 2rem; color: #777;">등록된 자료가 없습니다. 첫 자료를 공유해 보세요!</td></tr>';
     return;
   }
 
@@ -691,20 +784,20 @@ async function loadMaterialPosts() {
     const maskedName = maskTeacherName(post.teacher_name);
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td data-label="소속교">${post.school_name}</td>
-      <td data-label="교사명">${maskedName} 선생님</td>
-      <td data-label="학년">${post.grade}</td>
-      <td data-label="교과">${post.subject}</td>
-      <td data-label="단원/주제">
-        <strong>[${post.unit}]</strong><br>
-        <span style="color:#555;">${post.topic}</span>
+      <td>${post.school_name}</td>
+      <td>${maskedName} 선생님</td>
+      <td>${post.grade}</td>
+      <td>${post.subject}</td>
+      <td>
+        <div class="unit-title">[${post.unit}]</div>
+        <div class="topic-text">${post.topic}</div>
       </td>
-      <td data-label="첨부파일/관리">
-        <div style="display:flex; gap:0.4rem; align-items:center;">
-          <a href="${post.file_url}" target="_blank" download="${post.file_name}" style="color: #2563eb; font-weight: bold; text-decoration: none; font-size:0.85rem;">
+      <td>
+        <div style="display: flex; gap: 6px; align-items: center;">
+          <a href="${post.file_url}" target="_blank" download="${post.file_name}" class="btn-download">
             📥 다운로드
           </a>
-          <button onclick="deletePostWithPassword('${post.id}', '${post.password}', '${post.file_url}')" style="background:#dc3545; color:white; border:none; padding:0.2rem 0.5rem; border-radius:4px; font-size:0.75rem; cursor:pointer;">
+          <button onclick="deletePostWithPassword('${post.id}', '${post.password}', '${post.file_url}')" class="btn-delete">
             삭제
           </button>
         </div>
