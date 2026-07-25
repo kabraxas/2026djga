@@ -191,6 +191,25 @@
     </div>
   </div>
 
+  <!-- 최초 로그인 시 비밀번호 변경 모달 (닫기 버튼 없음/강제) -->
+  <div class="modal" id="forcePasswordModal">
+    <div class="modal-content" style="max-width: 420px;">
+      <h2>🔒 비밀번호 변경 안내</h2><br>
+      <p style="font-size:0.9rem; color:#666; margin-bottom:1rem;">
+        임시 비밀번호로 로그인하셨습니다.<br>안전한 서비스 이용을 위해 <strong>새로운 비밀번호</strong>로 변경해 주세요.
+      </p>
+      <div class="form-group">
+        <label>새 비밀번호</label>
+        <input type="password" id="new-password-input" placeholder="8자리 이상 입력" required>
+      </div>
+      <div class="form-group">
+        <label>새 비밀번호 확인</label>
+        <input type="password" id="new-password-confirm" placeholder="새 비밀번호 재입력" required>
+      </div>
+      <button style="width: 100%;" onclick="handleForcePasswordChange()">비밀번호 변경 완료</button>
+    </div>
+  </div>
+  
   <!-- 회원가입 신청 모달 -->
   <div class="modal" id="signupModal">
     <div class="modal-content">
@@ -325,7 +344,7 @@
       location.reload();
     }
 
-    // 로그인 세션 체크
+// 로그인 세션 체크 (비밀번호 변경 강제 여부 체크 추가)
     async function checkSession() {
       if (!_supabase) return;
       const { data: { session } } = await _supabase.auth.getSession();
@@ -338,10 +357,51 @@
           document.getElementById('auth-buttons').style.display = 'none';
           document.getElementById('user-info').style.display = 'flex';
           document.getElementById('user-display-name').innerText = `${profile.school_name} ${profile.username}`;
+
+          // ★ 비밀번호 변경이 필요한 유저(must_change_password가 true)인 경우 강제 모달 띄우기
+          if (profile.must_change_password) {
+            openModal('forcePasswordModal');
+          }
         }
       }
     }
 
+    // ★ 최초 로그인 시 강제 비밀번호 변경 처리 함수 (신규 추가)
+    async function handleForcePasswordChange() {
+      const newPassword = document.getElementById('new-password-input').value;
+      const confirmPassword = document.getElementById('new-password-confirm').value;
+
+      if (!newPassword || newPassword.length < 6) {
+        return alert("새 비밀번호는 최소 6자리 이상이어야 합니다.");
+      }
+
+      if (newPassword !== confirmPassword) {
+        return alert("새 비밀번호와 비밀번호 확인이 일치하지 않습니다.");
+      }
+
+      // 1. Supabase 비밀번호 변경 API 호출
+      const { error: authError } = await _supabase.auth.updateUser({
+        password: newPassword
+      });
+
+      if (authError) {
+        return alert("비밀번호 변경 실패: " + authError.message);
+      }
+
+      // 2. DB의 must_change_password 플래그를 false로 변경
+      const { error: dbError } = await _supabase
+        .from('profiles')
+        .update({ must_change_password: false })
+        .eq('id', currentUser.id);
+
+      if (dbError) {
+        alert("상태 업데이트 중 오류가 발생했습니다: " + dbError.message);
+      } else {
+        alert("비밀번호가 성공적으로 변경되었습니다! 바로 서비스를 이용하실 수 있습니다.");
+        closeModal('forcePasswordModal');
+        location.reload();
+      }
+    }
     // 로그아웃
     async function handleSignOut() {
       if (_supabase) await _supabase.signOut();
