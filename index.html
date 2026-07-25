@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>동작관악 초등교육 나눔터</title>
+  
+  <!-- Noto Sans KR 폰트 불러오기 (Google Fonts) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+  <!-- Supabase 라이브러리 불러오기 -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
+  <style>
+    :root {
+      --primary-color: #0056b3;
+      --bg-color: #f8f9fa;
+      --border-color: #dee2e6;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    /* 폰트 적용 */
+    body { 
+      font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+      color: #333; 
+      background: var(--bg-color); 
+      line-height: 1.6; 
+    }
+
+    /* 헤더 및 네비게이션 */
+    header { background: #fff; border-bottom: 2px solid var(--primary-color); padding: 1rem 2rem; }
+    .header-container { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
+    .logo { font-size: 1.4rem; font-weight: 700; color: var(--primary-color); text-decoration: none; cursor: pointer; }
+    .auth-buttons { display: flex; gap: 0.5rem; align-items: center; }
+
+    nav { background: #fff; border-bottom: 1px solid var(--border-color); }
+    .nav-container { max-width: 1200px; margin: 0 auto; display: flex; gap: 1rem; padding: 0 2rem; }
+    .nav-item { padding: 1rem 0.5rem; text-decoration: none; color: #555; font-weight: 500; cursor: pointer; border-bottom: 3px solid transparent; }
+    .nav-item.active { color: var(--primary-color); border-bottom-color: var(--primary-color); font-weight: 700; }
+
+    /* 메인 컨텐츠 영역 */
+    main { max-width: 1200px; margin: 2rem auto; padding: 0 2rem; min-height: 500px; }
+    .page-section { display: none; background: #fff; padding: 2rem; border-radius: 8px; border: 1px solid var(--border-color); }
+    .page-section.active { display: block; }
+
+    h2 { color: var(--primary-color); margin-bottom: 1.5rem; padding-bottom: 0.5rem; border-bottom: 2px solid #f0f0f0; font-weight: 700; }
+
+    /* 폼 및 카드 스타일 */
+    .form-group { margin-bottom: 1.2rem; }
+    label { display: block; margin-bottom: 0.4rem; font-weight: 500; }
+    input, textarea, select { width: 100%; padding: 0.7rem; border: 1px solid var(--border-color); border-radius: 4px; font-size: 1rem; font-family: 'Noto Sans KR', sans-serif; }
+    button { background: var(--primary-color); color: white; border: none; padding: 0.7rem 1.5rem; font-size: 1rem; border-radius: 4px; cursor: pointer; font-family: 'Noto Sans KR', sans-serif; font-weight: 500; }
+    button:hover { background: #004085; }
+    .btn-secondary { background: #6c757d; }
+
+    .card { border: 1px solid var(--border-color); padding: 1.2rem; border-radius: 6px; margin-bottom: 1rem; background: #fafafa; }
+    .badge { display: inline-block; padding: 0.2rem 0.6rem; font-size: 0.8rem; border-radius: 4px; color: white; background: #28a745; margin-bottom: 0.5rem; font-weight: 500; }
+    .badge-lock { background: #dc3545; }
+
+    /* 모달 */
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; }
+    .modal.active { display: flex; }
+    .modal-content { background: white; padding: 2rem; border-radius: 8px; width: 100%; max-width: 400px; }
+
+    footer { text-align: center; padding: 2rem; color: #6c757d; font-size: 0.9rem; margin-top: 3rem; }
+  </style>
+</head>
+<body>
+
+  <!-- 헤더 -->
+  <header>
+    <div class="header-container">
+      <div class="logo" onclick="showPage('schedule')">🏫 동작관악 초등교육 나눔터</div>
+      <div class="auth-buttons" id="auth-buttons">
+        <button class="btn-secondary" onclick="openModal('loginModal')">로그인</button>
+        <button onclick="openModal('signupModal')">회원가입 신청</button>
+      </div>
+      <div class="auth-buttons" id="user-info" style="display: none;">
+        <span id="user-display-name"></span>님
+        <button class="btn-secondary" onclick="handleSignOut()">로그아웃</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- 메뉴 네비게이션 -->
+  <nav>
+    <div class="nav-container">
+      <div class="nav-item active" onclick="showPage('schedule', this)">📅 연수 및 수업 나눔 일정</div>
+      <div class="nav-item" onclick="showPage('materials', this)">📚 장학자료 나눔</div>
+      <div class="nav-item" onclick="showPage('consulting', this)">💡 컨설팅 신청</div>
+      <div class="nav-item" onclick="showPage('qna', this)">🔒 비공개 질의 게시판</div>
+    </div>
+  </nav>
+
+  <!-- 메인 콘텐츠 영역 -->
+  <main>
+    <!-- 1. 연수 및 수업 나눔 일정 -->
+    <section id="page-schedule" class="page-section active">
+      <h2>📅 연수 및 수업 나눔 일정 안내</h2>
+      <div class="card">
+        <span class="badge">수업나눔</span>
+        <h3>[동작관악] 2026학년도 1학기 초등 블렌디드 수업 공개의 날</h3>
+        <p><strong>일시:</strong> 2026년 5월 20일(수) 14:00~16:00</p>
+        <p><strong>장소:</strong> 관악초등학교 4학년 2반 및 온라인 생중계</p>
+      </div>
+      <div class="card">
+        <span class="badge" style="background:#17a2b8;">교원연수</span>
+        <h3>[디지털리터러시] AI 도구를 활용한 초등 수업 설계 연수</h3>
+        <p><strong>일시:</strong> 2026년 6월 10일(수) 15:00~17:00</p>
+        <p><strong>장소:</strong> 동작관악교육지원청 3층 대강당</p>
+      </div>
+    </section>
+
+    <!-- 2. 장학자료 나눔 -->
+    <section id="page-materials" class="page-section">
+      <h2>📚 장학자료 나눔</h2>
+      <div class="card">
+        <h3>2026 초등 교육과정 재구성 가이드북</h3>
+        <p>교육지원청에서 제작한 학교 맞춤형 교육과정 재구성 서식 및 사례집입니다.</p>
+        <br>
+        <button onclick="alert('자료 다운로드가 시작됩니다.')">📥 다운로드 (PDF)</button>
+      </div>
+    </section>
+
+    <!-- 3. 컨설팅 신청 -->
+    <section id="page-consulting" class="page-section">
+      <h2>💡 컨설팅 신청</h2>
+      <form onsubmit="event.preventDefault(); alert('컨설팅 신청이 완료되었습니다.');">
+        <div class="form-group">
+          <label>소속 학교명</label>
+          <input type="text" placeholder="예: 서울동작초등학교" required>
+        </div>
+        <div class="form-group">
+          <label>신청자 성함</label>
+          <input type="text" required>
+        </div>
+        <div class="form-group">
+          <label>컨설팅 희망 분야</label>
+          <select>
+            <option>교육과정 / 수업평가</option>
+            <option>학생생활지도</option>
+            <option>디지털/AI 교육</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>신청 내용 및 문의사항</label>
+          <textarea rows="4" required></textarea>
+        </div>
+        <button type="submit">컨설팅 신청하기</button>
+      </form>
+    </section>
+
+    <!-- 4. 비공개 질의 게시판 -->
+    <section id="page-qna" class="page-section">
+      <h2>🔒 비공개 질의 게시판</h2>
+      
+      <!-- 미승인 / 비로그인 안내 -->
+      <div id="qna-lock-notice" class="card">
+        <p>⚠️ <strong>접근 제한:</strong> 질의 게시판은 <strong>회원가입 신청 후 관리자 승인이 완료된 교직원</strong>만 이용할 수 있는 비공개 공간입니다.</p>
+      </div>
+
+      <!-- 승인 유저 전용 영역 -->
+      <div id="qna-content" style="display: none;">
+        <div style="margin-bottom: 1.5rem;">
+          <h3>✍️ 비공개 질의 작성</h3>
+          <div class="form-group">
+            <input type="text" id="qna-title" placeholder="질문 제목을 입력하세요">
+          </div>
+          <div class="form-group">
+            <textarea id="qna-body" rows="4" placeholder="질문 내용을 입력하세요 (작성자 본인과 관리자만 볼 수 있습니다)"></textarea>
+          </div>
+          <button onclick="submitQna()">질문 등록하기</button>
+        </div>
+
+        <hr style="margin: 2rem 0;"><br>
+        <h3>📋 나의 질의 내역</h3>
+        <div id="qna-list"></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- 로그인 모달 -->
+  <div class="modal" id="loginModal">
+    <div class="modal-content">
+      <h2>로그인</h2><br>
+      <div class="form-group"><label>이메일</label><input type="email" id="login-email"></div>
+      <div class="form-group"><label>비밀번호</label><input type="password" id="login-password"></div>
+      <button style="width: 100%;" onclick="handleSignIn()">로그인</button><br><br>
+      <button class="btn-secondary" style="width: 100%;" onclick="closeModal('loginModal')">닫기</button>
+    </div>
+  </div>
+
+  <!-- 회원가입 신청 모달 -->
+  <div class="modal" id="signupModal">
+    <div class="modal-content">
+      <h2>회원가입 신청</h2><br>
+      <div class="form-group"><label>이메일</label><input type="email" id="signup-email"></div>
+      <div class="form-group"><label>비밀번호</label><input type="password" id="signup-password"></div>
+      <div class="form-group"><label>성함</label><input type="text" id="signup-username"></div>
+      <div class="form-group"><label>소속 학교</label><input type="text" id="signup-school" placeholder="예: 서울관악초등학교"></div>
+      <button style="width: 100%;" onclick="handleSignUp()">가입 신청하기</button><br><br>
+      <button class="btn-secondary" style="width: 100%;" onclick="closeModal('signupModal')">닫기</button>
+    </div>
+  </div>
+
+  <footer>
+    © 2026 동작관악교육지원청 초등교육 나눔터. All rights reserved.
+  </footer>
+
+  <script>
+    // Supabase 정보 설정 (복사해두신 URL과 ANON_KEY 입력)
+    const SUPABASE_URL = 'https://mfgudlbmnewqkcsrgncr.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1mZ3VkbGJtbmV3cWtjc3JnbmNyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ5NTU4NzksImV4cCI6MjEwMDUzMTg3OX0.WJJu8eWcULSunGqJqZV7gj28qfNR9DabM3Khvr1LJ8g';
+    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    let currentUser = null;
+    let userProfile = null;
+
+    // 페이지 전환 함수
+    function showPage(pageId, element) {
+      document.querySelectorAll('.page-section').forEach(sec => sec.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+      
+      document.getElementById('page-' + pageId).classList.add('active');
+      if(element) element.classList.add('active');
+
+      if (pageId === 'qna') {
+        checkQnaAccess();
+      }
+    }
+
+    // 모달 제어
+    function openModal(id) { document.getElementById(id).classList.add('active'); }
+    function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+    // 초기 실행
+    window.onload = async () => {
+      await checkSession();
+    };
+
+    // 회원가입
+    async function handleSignUp() {
+      const email = document.getElementById('signup-email').value;
+      const password = document.getElementById('signup-password').value;
+      const username = document.getElementById('signup-username').value;
+      const school_name = document.getElementById('signup-school').value;
+
+      const { data, error } = await supabase.auth.signUp({
+        email, password, options: { data: { username, school_name } }
+      });
+
+      if (error) alert("신청 실패: " + error.message);
+      else {
+        alert("가입 신청이 완료되었습니다!\n관리자 승인 후 질의 게시판 이용이 가능합니다.");
+        closeModal('signupModal');
+      }
+    }
+
+    // 로그인
+    async function handleSignIn() {
+      const email = document.getElementById('login-email').value;
+      const password = document.getElementById('login-password').value;
+
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) return alert("로그인 실패: " + error.message);
+
+      closeModal('loginModal');
+      location.reload();
+    }
+
+    // 세션 및 권한 체크
+    async function checkSession() {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        currentUser = session.user;
+        const { data: profile } = await supabase.from('profiles').select('*').eq('id', currentUser.id).single();
+        userProfile = profile;
+
+        document.getElementById('auth-buttons').style.display = 'none';
+        document.getElementById('user-info').style.display = 'flex';
+        document.getElementById('user-display-name').innerText = `${profile.school_name} ${profile.username}`;
+      }
+    }
+
+    async function handleSignOut() {
+      await supabase.auth.signOut();
+      location.reload();
+    }
+
+    // 질의게시판 비공개 권한 체크
+    async function checkQnaAccess() {
+      if (!currentUser || !userProfile) {
+        document.getElementById('qna-lock-notice').innerHTML = "<p>⚠️ 질의 게시판을 이용하시려면 먼저 <strong>로그인</strong>을 해주세요.</p>";
+        return;
+      }
+
+      if (userProfile.status !== 'APPROVED') {
+        document.getElementById('qna-lock-notice').innerHTML = "<p>⏳ 현재 <strong>관리자 승인 대기 중</strong>입니다. 승인 후 이용 가능합니다.</p>";
+        return;
+      }
+
+      document.getElementById('qna-lock-notice').style.display = 'none';
+      document.getElementById('qna-content').style.display = 'block';
+      loadMyQna();
+    }
+
+    // 질문 등록
+    async function submitQna() {
+      const title = document.getElementById('qna-title').value;
+      const content = document.getElementById('qna-body').value;
+
+      if(!title || !content) return alert("제목과 내용을 입력해 주세요.");
+
+      const { error } = await supabase.from('qna_posts').insert([{
+        user_id: currentUser.id,
+        author_name: userProfile.username,
+        school_name: userProfile.school_name,
+        title,
+        content
+      }]);
+
+      if (error) alert("등록 실패: " + error.message);
+      else {
+        alert("질문이 비공개로 등록되었습니다.");
+        document.getElementById('qna-title').value = '';
+        document.getElementById('qna-body').value = '';
+        loadMyQna();
+      }
+    }
+
+    // 본인 작성 질문 목록 가져오기
+    async function loadMyQna() {
+      const { data: posts } = await supabase
+        .from('qna_posts')
+        .select('*')
+        .eq('user_id', currentUser.id)
+        .order('created_at', { ascending: false });
+
+      const listDiv = document.getElementById('qna-list');
+      listDiv.innerHTML = '';
+
+      if (posts && posts.length > 0) {
+        posts.forEach(post => {
+          const card = document.createElement('div');
+          card.className = 'card';
+          card.innerHTML = `
+            <span class="badge badge-lock">비공개 질문</span>
+            <h4>${post.title}</h4>
+            <p style="margin: 0.5rem 0;">${post.content}</p>
+            <small style="color:#777;">작성일: ${new Date(post.created_at).toLocaleDateString()}</small>
+            ${post.answer ? `<div style="margin-top: 1rem; padding: 0.8rem; background: #e9ecef; border-radius: 4px;"><strong>💬 관리자 답변:</strong><p>${post.answer}</p></div>` : '<p style="color:#e67e22; margin-top:0.5rem; font-size:0.9rem;">⏳ 답변 대기 중</p>'}
+          `;
+          listDiv.appendChild(card);
+        });
+      } else {
+        listDiv.innerHTML = "<p>등록된 질의 내역이 없습니다.</p>";
+      }
+    }
+  </script>
+</body>
+</html>
