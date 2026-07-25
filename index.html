@@ -222,38 +222,50 @@
     © 2026 동작관악교육지원청 초등교육 나눔터. All rights reserved.
   </footer>
 
+<!-- Supabase 라이브러리 및 스크립트 실행 -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
-    // ----------------------------------------------------
-    // ⚠️ 본인의 Supabase 정보로 꼭 교체하세요!
-    // ----------------------------------------------------
+    // 1. Supabase 접속 정보
     const SUPABASE_URL = 'https://mfgudlbmnewqkcsrgncr.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1mZ3VkbGJtbmV3cWtjc3JnbmNyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ5NTU4NzksImV4cCI6MjEwMDUzMTg3OX0.WJJu8eWcULSunGqJqZV7gj28qfNR9DabM3Khvr1LJ8g';
-    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1mZ3VkbGJtbmV3cWtjc3JnbmNyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ5NTU4NzksImV4cCI6MjEwMDUzMTg3OX0.WJJu8eWcULSunGqJqZV7gj28qfNR9DabM3Khvr1LJ8g'; // <--- 본인 Key 유지
+
+    // 2. 클라이언트 초기화 (변수명 중복 방지를 위해 _supabase 로 설정)
+    let _supabase = null;
+    try {
+      if (typeof supabase !== 'undefined') {
+        _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      }
+    } catch (e) {
+      console.error("Supabase 연결 실패:", e);
+    }
 
     let currentUser = null;
     let userProfile = null;
 
-    // 페이지 전환 함수
+    // 모달 열기/닫기 (Supabase 상태와 상관없이 버튼 누르면 즉시 동작)
+    function openModal(id) { 
+      const modal = document.getElementById(id);
+      if (modal) modal.classList.add('active'); 
+    }
+    
+    function closeModal(id) { 
+      const modal = document.getElementById(id);
+      if (modal) modal.classList.remove('active'); 
+    }
+
+    // 페이지 전환
     function showPage(pageId, element) {
       document.querySelectorAll('.page-section').forEach(sec => sec.classList.remove('active'));
       document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
       
-      document.getElementById('page-' + pageId).classList.add('active');
-      if(element) element.classList.add('active');
+      const targetPage = document.getElementById('page-' + pageId);
+      if (targetPage) targetPage.classList.add('active');
+      if (element) element.classList.add('active');
 
       if (pageId === 'qna') {
         checkQnaAccess();
       }
     }
-
-    // 모달 제어
-    function openModal(id) { document.getElementById(id).classList.add('active'); }
-    function closeModal(id) { document.getElementById(id).classList.remove('active'); }
-
-    // 페이지 로드 초기 실행
-    window.onload = async () => {
-      await checkSession();
-    };
 
     // 회원가입 신청 처리
     async function handleSignUp() {
@@ -273,7 +285,11 @@
         return alert("개인정보 수집, 제공 및 활용에 동의하셔야 가입 신청이 가능합니다.");
       }
 
-      const { data, error } = await supabase.auth.signUp({
+      if (!_supabase) {
+        return alert("DB 연결 설정이 필요합니다. ANON KEY를 확인해 주세요.");
+      }
+
+      const { data, error } = await _supabase.auth.signUp({
         email: email,
         password: password,
         options: {
@@ -295,24 +311,27 @@
       }
     }
 
-    // 로그인
+    // 로그인 처리
     async function handleSignIn() {
       const email = document.getElementById('login-email').value.trim();
       const password = document.getElementById('login-password').value;
 
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (!_supabase) return alert("DB 연결 설정이 필요합니다.");
+
+      const { data, error } = await _supabase.auth.signInWithPassword({ email, password });
       if (error) return alert("로그인 실패: " + error.message);
 
       closeModal('loginModal');
       location.reload();
     }
 
-    // 세션 및 사용자 정보 체크
+    // 로그인 세션 체크
     async function checkSession() {
-      const { data: { session } } = await supabase.auth.getSession();
+      if (!_supabase) return;
+      const { data: { session } } = await _supabase.auth.getSession();
       if (session) {
         currentUser = session.user;
-        const { data: profile } = await supabase.from('profiles').select('*').eq('id', currentUser.id).single();
+        const { data: profile } = await _supabase.from('profiles').select('*').eq('id', currentUser.id).single();
         userProfile = profile;
 
         if (profile) {
@@ -325,11 +344,11 @@
 
     // 로그아웃
     async function handleSignOut() {
-      await supabase.auth.signOut();
+      if (_supabase) await _supabase.signOut();
       location.reload();
     }
 
-    // 질의게시판 비공개 권한 체크
+    // Q&A 접근 권한 체크
     async function checkQnaAccess() {
       if (!currentUser || !userProfile) {
         document.getElementById('qna-lock-notice').innerHTML = "<p>⚠️ 질의 게시판을 이용하시려면 먼저 <strong>로그인</strong>을 해주세요.</p>";
@@ -346,14 +365,14 @@
       loadMyQna();
     }
 
-    // 질문 등록
+    // 질의 등록
     async function submitQna() {
       const title = document.getElementById('qna-title').value.trim();
       const content = document.getElementById('qna-body').value.trim();
 
       if(!title || !content) return alert("제목과 내용을 입력해 주세요.");
 
-      const { error } = await supabase.from('qna_posts').insert([{
+      const { error } = await _supabase.from('qna_posts').insert([{
         user_id: currentUser.id,
         author_name: userProfile.username,
         school_name: userProfile.school_name,
@@ -370,9 +389,9 @@
       }
     }
 
-    // 본인 작성 질문 목록 불러오기
+    // 질의 내역 조회
     async function loadMyQna() {
-      const { data: posts } = await supabase
+      const { data: posts } = await _supabase
         .from('qna_posts')
         .select('*')
         .eq('user_id', currentUser.id)
@@ -398,6 +417,11 @@
         listDiv.innerHTML = "<p>등록된 질의 내역이 없습니다.</p>";
       }
     }
+
+    // 페이지 로드 시 세션 확인
+    window.addEventListener('DOMContentLoaded', () => {
+      checkSession();
+    });
   </script>
 </body>
 </html>
