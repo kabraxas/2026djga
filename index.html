@@ -115,17 +115,106 @@
       </div>
     </section>
     
-    <!-- 2. 장학자료 나눔 -->
-    <section id="page-materials" class="page-section">
-      <h2>📚 장학자료 나눔</h2>
-      <div class="card">
-        <h3>2026 초등 교육과정 재구성 가이드북</h3>
-        <p>교육지원청에서 제작한 학교 맞춤형 교육과정 재구성 서식 및 사례집입니다.</p>
-        <br>
-        <button onclick="alert('자료 다운로드가 시작됩니다.')">📥 다운로드 (PDF)</button>
-      </div>
-    </section>
+    <!-- 2. 장학자료 나눔 섹션 -->
+<section id="page-materials" class="page-section">
+  <h2>📚 장학자료 나눔</h2>
 
+  <!-- 하위 탭 -->
+  <div class="sub-nav">
+    <button class="sub-tab active" onclick="switchMaterialTab('PLAN', this)">📖 2026 수업 나눔의 달 교수학습 과정안</button>
+    <button class="sub-tab" onclick="switchMaterialTab('CASE', this)">📝 2026 수업 나눔의 달 수업 사례 원고</button>
+  </div>
+
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+    <h3 id="material-tab-title">📖 교수학습 과정안 목록</h3>
+    <button onclick="openMaterialModal()" style="font-size: 0.88rem; padding: 0.5rem 1rem;">✍️ 자료 등록하기</button>
+  </div>
+
+  <!-- 게시판 테이블 -->
+  <div id="material-board-container">
+    <table class="board-table">
+      <thead>
+        <tr>
+          <th>소속교</th>
+          <th>교사명</th>
+          <th>학년</th>
+          <th>교과</th>
+          <th>단원 / 학습 주제</th>
+          <th>첨부파일 / 관리</th>
+        </tr>
+      </thead>
+      <tbody id="material-list-body">
+        <!-- JS 동적 생성 -->
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- 자료 등록 모달 -->
+<div class="modal" id="materialPostModal">
+  <div class="modal-content" style="max-width: 550px;">
+    <h2>📄 장학자료 등록</h2><br>
+    <form id="materialForm" onsubmit="handleMaterialSubmit(event)">
+      <div class="form-group">
+        <label>구분</label>
+        <select id="mat-category" required>
+          <option value="PLAN">2026 수업 나눔의 달 교수학습 과정안</option>
+          <option value="CASE">2026 수업 나눔의 달 수업 사례 원고</option>
+        </select>
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem;">
+        <div class="form-group">
+          <label>소속 학교명</label>
+          <input type="text" id="mat-school" placeholder="예: 서울동작초" required>
+        </div>
+        <div class="form-group">
+          <label>교사명</label>
+          <input type="text" id="mat-teacher" placeholder="예: 홍길동" required>
+        </div>
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem;">
+        <div class="form-group">
+          <label>대상 학년</label>
+          <select id="mat-grade" required>
+            <option value="1학년">1학년</option>
+            <option value="2학년">2학년</option>
+            <option value="3학년">3학년</option>
+            <option value="4학년">4학년</option>
+            <option value="5학년">5학년</option>
+            <option value="6학년">6학년</option>
+            <option value="공통/특수">공통/특수</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>수업 교과</label>
+          <input type="text" id="mat-subject" placeholder="예: 국어, 수학, 융합" required>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>단원</label>
+        <input type="text" id="mat-unit" placeholder="예: 3. 차근차근 하나씩" required>
+      </div>
+      <div class="form-group">
+        <label>학습 주제</label>
+        <input type="text" id="mat-topic" placeholder="예: 설명하는 글을 읽고 요약하기" required>
+      </div>
+      
+      <!-- 🔒 비밀번호 입력 필드 추가 -->
+      <div class="form-group">
+        <label>글 비밀번호 (수정/삭제용)</label>
+        <input type="password" id="mat-password" placeholder="비밀번호 4자리 이상 입력" required minlength="4">
+      </div>
+
+      <div class="form-group">
+        <label>첨부파일 (PDF, HWP, HWPX, DOCX 등)</label>
+        <input type="file" id="mat-file" accept=".pdf, .hwp, .hwpx, .docx, .doc, .zip" required>
+      </div>
+
+      <button type="submit" style="width: 100%; margin-top: 1rem;">자료 업로드 및 등록</button><br><br>
+      <button type="button" class="btn-secondary" style="width: 100%;" onclick="closeModal('materialPostModal')">취소</button>
+    </form>
+  </div>
+</div>
     <!-- 3. 컨설팅 신청 -->
     <section id="page-consulting" class="page-section">
       <h2>💡 컨설팅 신청</h2>
@@ -491,6 +580,171 @@
     window.addEventListener('DOMContentLoaded', () => {
       checkSession();
     });
+    let currentMaterialCategory = 'PLAN';
+
+// 1. 이름 마스킹 (홍길동 -> 홍*동)
+function maskTeacherName(name) {
+  if (!name) return '';
+  name = name.trim();
+  if (name.length <= 2) return name.substring(0, 1) + '*';
+  return name.substring(0, 1) + '*'.repeat(name.length - 2) + name.substring(name.length - 1);
+}
+
+// 2. 탭 전환
+function switchMaterialTab(category, btnElement) {
+  currentMaterialCategory = category;
+  document.querySelectorAll('.sub-tab').forEach(tab => tab.classList.remove('active'));
+  if (btnElement) btnElement.classList.add('active');
+
+  document.getElementById('material-tab-title').innerText = 
+    category === 'PLAN' ? '📖 교수학습 과정안 목록' : '📝 수업 사례 원고 목록';
+  document.getElementById('mat-category').value = category;
+
+  loadMaterialPosts();
+}
+
+// 3. 모달 열기
+function openMaterialModal() {
+  openModal('materialPostModal');
+}
+
+// 4. 글 및 파일 제출 (비밀번호 포함)
+async function handleMaterialSubmit(event) {
+  event.preventDefault();
+  if (!_supabase) return alert("Supabase 연결이 필요합니다.");
+
+  const category = document.getElementById('mat-category').value;
+  const school_name = document.getElementById('mat-school').value.trim();
+  const teacher_name = document.getElementById('mat-teacher').value.trim();
+  const grade = document.getElementById('mat-grade').value;
+  const subject = document.getElementById('mat-subject').value.trim();
+  const unit = document.getElementById('mat-unit').value.trim();
+  const topic = document.getElementById('mat-topic').value.trim();
+  const password = document.getElementById('mat-password').value;
+  const fileInput = document.getElementById('mat-file');
+
+  if (fileInput.files.length === 0) return alert("첨부파일을 선택해 주세요.");
+
+  const file = fileInput.files[0];
+  const fileExt = file.name.split('.').pop();
+  const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
+  const filePath = `${category}/${fileName}`;
+
+  try {
+    // Storage 파일 업로드
+    const { error: uploadError } = await _supabase.storage.from('materials').upload(filePath, file);
+    if (uploadError) throw uploadError;
+
+    const { data: urlData } = _supabase.storage.from('materials').getPublicUrl(filePath);
+
+    // DB 저장 (비밀번호 포함)
+    const { error: dbError } = await _supabase.from('material_posts').insert([{
+      category,
+      school_name,
+      teacher_name,
+      grade,
+      subject,
+      unit,
+      topic,
+      password, // 비밀번호 저장
+      file_url: urlData.publicUrl,
+      file_name: file.name
+    }]);
+
+    if (dbError) throw dbError;
+
+    alert("자료가 성공적으로 등록되었습니다!");
+    closeModal('materialPostModal');
+    document.getElementById('materialForm').reset();
+    loadMaterialPosts();
+
+  } catch (err) {
+    alert("등록 중 오류가 발생했습니다: " + err.message);
+  }
+}
+
+// 5. 게시글 목록 불러오기
+async function loadMaterialPosts() {
+  const tbody = document.getElementById('material-list-body');
+  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">자료를 불러오는 중입니다...</td></tr>';
+
+  if (!_supabase) return;
+
+  const { data: posts, error } = await _supabase
+    .from('material_posts')
+    .select('*')
+    .eq('category', currentMaterialCategory)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:red;">불러오기 실패</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = '';
+  if (!posts || posts.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 2rem; color: #777;">등록된 자료가 없습니다.</td></tr>';
+    return;
+  }
+
+  posts.forEach(post => {
+    const maskedName = maskTeacherName(post.teacher_name);
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td data-label="소속교">${post.school_name}</td>
+      <td data-label="교사명">${maskedName} 선생님</td>
+      <td data-label="학년">${post.grade}</td>
+      <td data-label="교과">${post.subject}</td>
+      <td data-label="단원/주제">
+        <strong>[${post.unit}]</strong><br>
+        <span style="color:#555;">${post.topic}</span>
+      </td>
+      <td data-label="첨부파일/관리">
+        <div style="display:flex; gap:0.4rem; align-items:center;">
+          <a href="${post.file_url}" target="_blank" download="${post.file_name}" style="color: #2563eb; font-weight: bold; text-decoration: none; font-size:0.85rem;">
+            📥 다운로드
+          </a>
+          <button onclick="deletePostWithPassword('${post.id}', '${post.password}', '${post.file_url}')" style="background:#dc3545; color:white; border:none; padding:0.2rem 0.5rem; border-radius:4px; font-size:0.75rem; cursor:pointer;">
+            삭제
+          </button>
+        </div>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// 6. 비밀번호 검증 삭제 처리
+async function deletePostWithPassword(postId, originalPassword, fileUrl) {
+  const inputPwd = prompt("게시글 삭제를 위해 등록했던 비밀번호를 입력해 주세요:");
+  if (!inputPwd) return; // 취소 누른 경우
+
+  // 비밀번호 일치 여부 확인
+  if (inputPwd !== originalPassword) {
+    alert("비밀번호가 일치하지 않습니다.");
+    return;
+  }
+
+  if (!confirm("정말 삭제하시겠습니까? 삭제된 파일은 복구할 수 없습니다.")) return;
+
+  try {
+    // 1) Storage 파일 삭제
+    if (fileUrl) {
+      const filePath = fileUrl.split('/materials/')[1];
+      if (filePath) await _supabase.storage.from('materials').remove([filePath]);
+    }
+
+    // 2) DB 레코드 삭제
+    const { error } = await _supabase.from('material_posts').delete().eq('id', postId);
+    if (error) throw error;
+
+    alert("성공적으로 삭제되었습니다.");
+    loadMaterialPosts();
+
+  } catch (err) {
+    alert("삭제 실패: " + err.message);
+  }
+}
   </script>
 </body>
 </html>
