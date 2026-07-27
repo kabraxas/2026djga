@@ -261,7 +261,10 @@
       </div>
       <div class="auth-buttons" id="user-info" style="display: none;">
         <span id="user-display-name"></span>님
-        <button class="btn-secondary" onclick="handleSignOut()">로그아웃</button>
+        <!-- 예시: 상단 네비게이션/프로필 영역의 로그아웃 버튼 -->
+        <button id="btn-logout" onclick="handleLogout()" style="display: none;">
+          로그아웃
+        </button>
       </div>
     </div>
   </header>
@@ -675,10 +678,57 @@
       }
     }
 
-    // 로그아웃
-    async function handleSignOut() {
-      if (_supabase) await _supabase.signOut();
-      location.reload();
+    // 로그아웃 처리 함수
+    async function handleLogout() {
+      if (!confirm("로그아웃 하시겠습니까?")) return;
+    
+      try {
+        if (_supabase) {
+          // 1. Supabase 인증 세션 종료
+          const { error } = await _supabase.auth.signOut();
+          if (error) throw error;
+        }
+    
+        // 2. 전역 사용자 상태 변수 초기화 (기존 사용하시던 변수명 확인)
+        currentUser = null;
+    
+        // 3. 로컬 스토리지에 남아있을 수 있는 세션 삭제 (필요시)
+        localStorage.removeItem('sb-access-token');
+        localStorage.removeItem('sb-refresh-token');
+    
+        alert("로그아웃되었습니다.");
+    
+        // 4. UI 및 게시판 목록 새로고침/업데이트
+        updateAuthUI(); // 로그인/로그아웃 버튼 상태 전환 함수
+        
+        // 만약 현재 '교수학습 과정안' 탭을 보고 있었다면 권한 제어 적용을 위해 재로드
+        if (typeof loadMaterialPosts === 'function') {
+          loadMaterialPosts();
+        }
+    
+      } catch (err) {
+        alert("로그아웃 처리 중 오류가 발생했습니다: " + err.message);
+      }
+    }
+    
+    // 로그인/로그아웃 상태에 따른 UI 버튼 전환 함수
+    function updateAuthUI() {
+      const loginBtn = document.getElementById('btn-login-modal');   // 로그인 버튼 ID
+      const logoutBtn = document.getElementById('btn-logout');       // 로그아웃 버튼 ID
+      const userProfile = document.getElementById('user-profile-info'); // 사용자 표시 영역 ID
+    
+      if (currentUser) {
+        if (loginBtn) loginBtn.style.display = 'none';
+        if (logoutBtn) logoutBtn.style.display = 'inline-block';
+        if (userProfile) {
+          userProfile.style.display = 'inline-block';
+          userProfile.innerText = `${currentUser.email || '회원'}님 환영합니다.`;
+        }
+      } else {
+        if (loginBtn) loginBtn.style.display = 'inline-block';
+        if (logoutBtn) logoutBtn.style.display = 'none';
+        if (userProfile) userProfile.style.display = 'none';
+      }
     }
 
     // Q&A 접근 권한 체크
@@ -937,6 +987,26 @@ async function handleMaterialSubmit(event) {
         alert("삭제 실패: " + err.message);
       }
     }
+    // Supabase 초기화 및 로그인 상태 감지 설정
+    document.addEventListener('DOMContentLoaded', async () => {
+      if (_supabase) {
+        // 현재 로그인된 유저 세션 확인
+        const { data: { session } } = await _supabase.auth.getSession();
+        currentUser = session ? session.user : null;
+        updateAuthUI();
+    
+        // 세션 변화 감지 (로그인/로그아웃 이벤트 자동 수신)
+        _supabase.auth.onAuthStateChange((event, session) => {
+          currentUser = session ? session.user : null;
+          updateAuthUI();
+          
+          // 로그아웃 이벤트 발생 시 재로드
+          if (event === 'SIGNED_OUT' && typeof loadMaterialPosts === 'function') {
+            loadMaterialPosts();
+          }
+        });
+      }
+    });
     
   </script>
 </body>
