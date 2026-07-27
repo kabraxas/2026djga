@@ -72,6 +72,31 @@
     /* ★ 여기에 전달해 드린 CSS 코드를 붙여넣으세요 ★ */
     /* -------------------------------------------------- */
 
+    /* MS Forms 반응형 컨테이너 */
+    .ms-form-container {
+      width: 100%;
+      height: 800px; /* PC 환경 기본 높이 */
+      background-color: #ffffff;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      border: 1px solid #e2e8f0;
+    }
+    
+    .ms-form-container iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+    
+    /* 모바일 기기 화면 대응 */
+    @media (max-width: 768px) {
+      .ms-form-container {
+        height: 650px; /* 모바일 세로 길이에 맞춘 높이 설정 */
+        border-radius: 8px;
+      }
+    }
+    
         /* 1. 기본 폰트 크기를 화면 너비(vw)에 맞춰 유연하게 자동 조절 */
     html {
       /* 최소 14px, 표준 1vw + 10px, 최대 18px 범위에서 동적 변경 */
