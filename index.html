@@ -404,17 +404,16 @@
   <p style="margin-bottom: 1rem; color: #666;">아래 MS Forms 양식을 통해 컨설팅을 신청해 주세요.</p>
   
   <!-- 반응형 MS Forms 임베드 컨테이너 -->
-  <div class="ms-form-container">
+  <div class="ms-form-container" style="width: 100%; height: 800px; border-radius: 8px; overflow: hidden;">
     <iframe 
       src="https://forms.cloud.microsoft/Pages/ResponsePage.aspx?id=I7AFvLOwT0-PSv78XUq8xjpnBIgIoqBBug9Yqvbl5L1UQVdXQ1I2NVowRkZUQjhKTzJBSlhNNkRVWS4u&embed=true" 
-      title="컨설팅 신청 양식"
+      width="100%" 
+      height="100%" 
       frameborder="0" 
       marginwidth="0" 
       marginheight="0" 
-      allowfullscreen 
-      webkitallowfullscreen 
-      mozallowfullscreen 
-      msallowfullscreen>
+      style="border: none; min-height: 750px;" 
+      allowfullscreen>
     </iframe>
   </div>
 </section>
@@ -907,40 +906,38 @@ async function handleMaterialSubmit(event) {
       });
     }
 
-  </script>
-</body>
-</html>
-// 6. 비밀번호 검증 삭제 처리
-async function deletePostWithPassword(postId, originalPassword, fileUrl) {
-  const inputPwd = prompt("게시글 삭제를 위해 등록했던 비밀번호를 입력해 주세요:");
-  if (!inputPwd) return; // 취소 누른 경우
-
-  // 비밀번호 일치 여부 확인
-  if (inputPwd !== originalPassword) {
-    alert("비밀번호가 일치하지 않습니다.");
-    return;
-  }
-
-  if (!confirm("정말 삭제하시겠습니까? 삭제된 파일은 복구할 수 없습니다.")) return;
-
-  try {
-    // 1) Storage 파일 삭제
-    if (fileUrl) {
-      const filePath = fileUrl.split('/materials/')[1];
-      if (filePath) await _supabase.storage.from('materials').remove([filePath]);
+    // 6. 비밀번호 검증 삭제 처리
+    async function deletePostWithPassword(postId, originalPassword, fileUrl) {
+      const inputPwd = prompt("게시글 삭제를 위해 등록했던 비밀번호를 입력해 주세요:");
+      if (!inputPwd) return; // 취소 누른 경우
+    
+      // 비밀번호 일치 여부 확인
+      if (inputPwd !== originalPassword) {
+        alert("비밀번호가 일치하지 않습니다.");
+        return;
+      }
+    
+      if (!confirm("정말 삭제하시겠습니까? 삭제된 파일은 복구할 수 없습니다.")) return;
+    
+      try {
+        // 1) Storage 파일 삭제
+        if (fileUrl) {
+          const filePath = fileUrl.split('/materials/')[1];
+          if (filePath) await _supabase.storage.from('materials').remove([filePath]);
+        }
+    
+        // 2) DB 레코드 삭제
+        const { error } = await _supabase.from('material_posts').delete().eq('id', postId);
+        if (error) throw error;
+    
+        alert("성공적으로 삭제되었습니다.");
+        loadMaterialPosts();
+    
+      } catch (err) {
+        alert("삭제 실패: " + err.message);
+      }
     }
-
-    // 2) DB 레코드 삭제
-    const { error } = await _supabase.from('material_posts').delete().eq('id', postId);
-    if (error) throw error;
-
-    alert("성공적으로 삭제되었습니다.");
-    loadMaterialPosts();
-
-  } catch (err) {
-    alert("삭제 실패: " + err.message);
-  }
-}
+    
   </script>
 </body>
 </html>
