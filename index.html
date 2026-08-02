@@ -574,19 +574,20 @@
       const username = document.getElementById('signup-username').value.trim();
       const phone = document.getElementById('signup-phone').value.trim();
       const privacy_agreed = document.getElementById('signup-privacy').checked;
-
+    
       if (!email || !password || !school_name || !job_title || !username || !phone) {
         return alert("모든 항목을 입력해 주세요.");
       }
-
+    
       if (!privacy_agreed) {
         return alert("개인정보 수집, 제공 및 활용에 동의하셔야 가입 신청이 가능합니다.");
       }
-
+    
       if (!_supabase) {
         return alert("DB 연결 설정이 필요합니다.");
       }
-
+    
+      // 1. Supabase 회원가입 진행
       const { data, error } = await _supabase.auth.signUp({
         email: email,
         password: password,
@@ -594,11 +595,17 @@
           data: { username, school_name, job_title, phone, privacy_agreed }
         }
       });
-
+    
       if (error) {
         alert("신청 실패: " + error.message);
       } else {
-        alert("가입 신청이 성공적으로 완료되었습니다!\n관리자 승인 후 비공개 질의 게시판 이용이 가능합니다.");
+        // ★ 핵심: 가입 성공 직후 자동 생성된 세션을 강제로 파기(로그아웃)합니다.
+        await _supabase.auth.signOut();
+        currentUser = null;
+        userProfile = null;
+        updateAuthUI();
+    
+        alert("가입 신청이 성공적으로 완료되었습니다!\n관리자 승인 후 로그인 및 서비스 이용이 가능합니다.");
         closeModal('signupModal');
       }
     }
@@ -673,12 +680,25 @@
       const { data: { session } } = await _supabase.auth.getSession();
       
       if (session) {
-        currentUser = session.user;
-        const { data: profile } = await _supabase.from('profiles').select('*').eq('id', currentUser.id).single();
-        userProfile = profile;
-
-        if (profile && profile.must_change_password) {
-          openModal('forcePasswordModal');
+        const userId = session.user.id;
+        const { data: profile, error } = await _supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', userId)
+          .single();
+    
+        // ★ profiles 조회가 안 되거나 승인 상태가 APPROVED가 아니면 강제 로그아웃
+        if (error || !profile || profile.status !== 'APPROVED') {
+          await _supabase.auth.signOut();
+          currentUser = null;
+          userProfile = null;
+        } else {
+          currentUser = session.user;
+          userProfile = profile;
+    
+          if (profile.must_change_password) {
+            openModal('forcePasswordModal');
+          }
         }
       } else {
         currentUser = null;
